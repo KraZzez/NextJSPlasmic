@@ -186,16 +186,16 @@ import {
   ComponentRenderData,
   PlasmicRootProvider,
 } from "@plasmicapp/loader-nextjs";
-import type { GetStaticPaths, GetStaticProps } from "next";
+// import type { GetStaticPaths, GetStaticProps } from "next";
 
 import Error from "next/error";
 import { useRouter } from "next/router";
-import { PLASMIC } from "@/plasmic-init";
+// import { PLASMIC } from "@/plasmic-init";
 import { getPlasmicLoader } from "@/plasmic-init";
-import {
-  loaderForProject1,
-  loaderForProject2,
-} from "@/plasmic-init";
+// import {
+//   loaderForProject1,
+//   loaderForProject2,
+// } from "@/plasmic-init";
 import type { GetServerSideProps } from "next";
 
 
