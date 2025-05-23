@@ -93,6 +93,7 @@ export const loaderForProject2 = initPlasmicLoader({
 // Function to pick loader by hostname
 export function getPlasmicLoader(hostname: string) {
   if (hostname === "next-js-plasmic.vercel.app") return loaderForProject1;
-  if (hostname === "localhost:3001") return loaderForProject2;
+  if (hostname === "2ndnextjs-plasmic.vercel.app") return loaderForProject2;
+//   if (hostname === "localhost:3001") return loaderForProject3;
   return null;
 }
