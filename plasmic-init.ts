@@ -61,19 +61,21 @@ export const PLASMIC = initPlasmicLoader({
   preview: true,
 });
 
-// Register your components globally once
-PLASMIC.registerComponent(HelloWorld, {
-  name: "HelloWorld",
-  props: {
-    verbose: "boolean",
-    children: "slot",
-  },
-});
 
-PLASMIC.registerComponent(SimpleComponent, {
-  name: "SimpleComponent",
-  props:{},
-});
+
+// Register your components globally once
+// PLASMIC.registerComponent(HelloWorld, {
+//   name: "HelloWorld",
+//   props: {
+//     verbose: "boolean",
+//     children: "slot",
+//   },
+// });
+
+// PLASMIC.registerComponent(SimpleComponent, {
+//   name: "SimpleComponent",
+//   props:{},
+// });
 
 // Create loaders for each project separately
 export const loaderForProject1 = initPlasmicLoader({
@@ -95,6 +97,24 @@ export const loaderForProject2 = initPlasmicLoader({
   ],
   preview: true,
 });
+
+function registerComponents(loader: ReturnType<typeof initPlasmicLoader>) {
+  loader.registerComponent(HelloWorld, {
+    name: "HelloWorld",
+    props: {
+      verbose: "boolean",
+      children: "slot",
+    },
+  });
+  loader.registerComponent(SimpleComponent, {
+    name: "SimpleComponent",
+    props: {},
+  });
+}
+
+registerComponents(PLASMIC);
+registerComponents(loaderForProject1);
+registerComponents(loaderForProject2);
 
 // Function to pick loader by hostname
 export function getPlasmicLoader(hostname: string) {
