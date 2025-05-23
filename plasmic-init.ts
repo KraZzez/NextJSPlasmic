@@ -53,6 +53,7 @@
 
 import { initPlasmicLoader } from "@plasmicapp/loader-nextjs";
 import { HelloWorld } from "./components/HelloWorld";
+import SimpleComponent from "./components/SimpleComponent";
 
 // Create a global Plasmic instance to register components on
 export const PLASMIC = initPlasmicLoader({
@@ -67,6 +68,11 @@ PLASMIC.registerComponent(HelloWorld, {
     verbose: "boolean",
     children: "slot",
   },
+});
+
+PLASMIC.registerComponent(SimpleComponent, {
+  name: "SimpleComponent",
+  props:{},
 });
 
 // Create loaders for each project separately
