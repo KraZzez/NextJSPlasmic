@@ -104,6 +104,81 @@
 //   );
 // }
 
+// import * as React from "react";
+// import {
+//   PlasmicComponent,
+//   extractPlasmicQueryData,
+//   ComponentRenderData,
+//   PlasmicRootProvider,
+// } from "@plasmicapp/loader-nextjs";
+// import type { GetStaticPaths, GetStaticProps } from "next";
+
+// import Error from "next/error";
+// import { useRouter } from "next/router";
+// import { PLASMIC } from "@/plasmic-init";
+
+// export default function PlasmicLoaderPage(props: {
+//   plasmicData?: ComponentRenderData;
+//   queryCache?: Record<string, unknown>;
+// }) {
+//   const { plasmicData, queryCache } = props;
+//   const router = useRouter();
+//   if (!plasmicData || plasmicData.entryCompMetas.length === 0) {
+//     return <Error statusCode={404} />;
+//   }
+//   const pageMeta = plasmicData.entryCompMetas[0];
+//   return (
+//     <PlasmicRootProvider
+//       loader={PLASMIC}
+//       prefetchedData={plasmicData}
+//       prefetchedQueryData={queryCache}
+//       pageRoute={pageMeta.path}
+//       pageParams={pageMeta.params}
+//       pageQuery={router.query}
+//     >
+//       <PlasmicComponent component={pageMeta.displayName} />
+//     </PlasmicRootProvider>
+//   );
+// }
+
+// export const getStaticProps: GetStaticProps = async (context) => {
+//   const { catchall } = context.params ?? {};
+//   const plasmicPath = typeof catchall === 'string' ? catchall : Array.isArray(catchall) ? `/${catchall.join('/')}` : '/';
+//   const plasmicData = await PLASMIC.maybeFetchComponentData(plasmicPath);
+//   if (!plasmicData) {
+//     // non-Plasmic catch-all
+//     return { props: {} };
+//   }
+//   const pageMeta = plasmicData.entryCompMetas[0];
+//   // Cache the necessary data fetched for the page
+//   const queryCache = await extractPlasmicQueryData(
+//     <PlasmicRootProvider
+//       loader={PLASMIC}
+//       prefetchedData={plasmicData}
+//       pageRoute={pageMeta.path}
+//       pageParams={pageMeta.params}
+//     >
+//       <PlasmicComponent component={pageMeta.displayName} />
+//     </PlasmicRootProvider>
+//   );
+//   // Use revalidate if you want incremental static regeneration
+//   return { props: { plasmicData, queryCache }, revalidate: 60 };
+// }
+
+// export const getStaticPaths: GetStaticPaths = async () => {
+//   const pageModules = await PLASMIC.fetchPages();
+//   console.log(pageModules.map(p => p.path));
+//   return {
+//     paths: pageModules.map((mod) => ({
+//       params: {
+//         catchall: mod.path.substring(1).split("/"),
+//       },
+//     })),
+//     fallback: "blocking",
+//   };
+// }
+
+
 import * as React from "react";
 import {
   PlasmicComponent,
@@ -116,20 +191,38 @@ import type { GetStaticPaths, GetStaticProps } from "next";
 import Error from "next/error";
 import { useRouter } from "next/router";
 import { PLASMIC } from "@/plasmic-init";
+import { getPlasmicLoader } from "@/plasmic-init";
+import {
+  loaderForProject1,
+  loaderForProject2,
+} from "@/plasmic-init";
+import type { GetServerSideProps } from "next";
 
-export default function PlasmicLoaderPage(props: {
+
+export default function PlasmicLoaderPage({
+  plasmicData,
+  queryCache,
+  hostname,
+}: {
   plasmicData?: ComponentRenderData;
   queryCache?: Record<string, unknown>;
+  hostname: string;
 }) {
-  const { plasmicData, queryCache } = props;
   const router = useRouter();
   if (!plasmicData || plasmicData.entryCompMetas.length === 0) {
     return <Error statusCode={404} />;
   }
   const pageMeta = plasmicData.entryCompMetas[0];
+
+  const loader = getPlasmicLoader(hostname);
+    if (!loader) {
+    return <Error statusCode={404} />;
+    }
+
+
   return (
     <PlasmicRootProvider
-      loader={PLASMIC}
+      loader={loader}
       prefetchedData={plasmicData}
       prefetchedQueryData={queryCache}
       pageRoute={pageMeta.path}
@@ -141,19 +234,29 @@ export default function PlasmicLoaderPage(props: {
   );
 }
 
-export const getStaticProps: GetStaticProps = async (context) => {
+
+
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const hostname = context.req.headers.host || "default";
+  const loader = getPlasmicLoader(hostname);
+
+  if (!loader) return { notFound: true };
+
   const { catchall } = context.params ?? {};
-  const plasmicPath = typeof catchall === 'string' ? catchall : Array.isArray(catchall) ? `/${catchall.join('/')}` : '/';
-  const plasmicData = await PLASMIC.maybeFetchComponentData(plasmicPath);
-  if (!plasmicData) {
-    // non-Plasmic catch-all
-    return { props: {} };
-  }
+  const plasmicPath =
+    typeof catchall === "string"
+      ? catchall
+      : Array.isArray(catchall)
+      ? `/${catchall.join("/")}`
+      : "/";
+
+  const plasmicData = await loader.maybeFetchComponentData(plasmicPath);
+  if (!plasmicData) return { notFound: true };
+
   const pageMeta = plasmicData.entryCompMetas[0];
-  // Cache the necessary data fetched for the page
   const queryCache = await extractPlasmicQueryData(
     <PlasmicRootProvider
-      loader={PLASMIC}
+      loader={loader}
       prefetchedData={plasmicData}
       pageRoute={pageMeta.path}
       pageParams={pageMeta.params}
@@ -161,19 +264,29 @@ export const getStaticProps: GetStaticProps = async (context) => {
       <PlasmicComponent component={pageMeta.displayName} />
     </PlasmicRootProvider>
   );
-  // Use revalidate if you want incremental static regeneration
-  return { props: { plasmicData, queryCache }, revalidate: 60 };
-}
 
-export const getStaticPaths: GetStaticPaths = async () => {
-  const pageModules = await PLASMIC.fetchPages();
-  console.log(pageModules.map(p => p.path));
   return {
-    paths: pageModules.map((mod) => ({
-      params: {
-        catchall: mod.path.substring(1).split("/"),
-      },
-    })),
-    fallback: "blocking",
+    props: { plasmicData, queryCache, hostname },
   };
-}
+};
+
+
+
+// export const getStaticPaths: GetStaticPaths = async () => {
+//   const loaders = [loaderForProject1, loaderForProject2];
+
+//   const allPages = await Promise.all(
+//     loaders.map((loader) => loader.fetchPages())
+//   );
+
+//   const paths = allPages.flat().map((mod) => ({
+//     params: {
+//       catchall: mod.path.substring(1).split("/"),
+//     },
+//   }));
+
+//   return {
+//     paths,
+//     fallback: "blocking",
+//   };
+// };
